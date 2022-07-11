@@ -8,19 +8,7 @@ from matplotlib.patches import Rectangle
 
 viridis = cm.get_cmap('viridis', 8)
 
-def plot_examples(data,colormaps):
-    """
-    Helper function to plot data with associated colormap.
-    """
 
-    n = len(colormaps)
-    fig, axs = plt.subplots(1, n, figsize=(n * 2 + 2, 3),
-                            constrained_layout=True, squeeze=False)
-    for [ax, cmap] in zip(axs.flat, colormaps):
-        psm = ax.pcolormesh(data, cmap=cmap, rasterized=True, vmin=-4, vmax=4)
-        fig.colorbar(psm, ax=ax)
-    plt.show()
-    
     
 def plot_DNN(V):
     nX = 111*2

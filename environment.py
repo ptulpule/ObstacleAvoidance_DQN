@@ -27,9 +27,9 @@ class env:
         self.m  = 1575
         self.Lf = 1.2
         self.J  = 2875
-        self.obs1 = [80 ,2, 2,4]         #X,Y,W,H
-        self.obs2 = [50,-0.5,100,1]      #X,Y,W,H
-        self.obs3 = [50,8.2-0.5, 100, 1] #X,Y,W,H
+        self.obs1 = [80 ,2, 2,4]         #X,Y,W,H - Obstacle
+        self.obs2 = [50,-0.5,100,1]      #X,Y,W,H - right road edge
+        self.obs3 = [50,8.2-0.5, 100, 1] #X,Y,W,H - left road edge
         self.reset()
         
     def reset(self):
@@ -51,7 +51,8 @@ class env:
         action = self.action_memory[idx]
         
 
-        #Linear Parameters Calculation
+        # Vehicle dynamics model
+        # Refer: https://saemobilus.sae.org/content/2022-01-0070/
         a4 = -(self.Cr+self.Cf)/(self.m*self.V)
         a5 = -1+(self.Cr*self.Lr-self.Cf*self.Lf)/(self.m*pow(self.V,2))
         a1 = (self.Cr*self.Lr-self.Cf*self.Lf)/self.J
@@ -60,11 +61,11 @@ class env:
         a3 = self.Cf*self.Lf/self.J
         
         S_next = np.zeros([1,5])
-        S_next[0,0]   =   a4*State[0] + a5*State[1] + a6*action
+        S_next[0,0]   =   a4*State[0] + a5*State[1] + a6*action # Slip angle
         S_next[0,1]   =   a1*State[0] + a2*State[1] + a3*action #r
         S_next[0,2]   =   State[1] #phi
-        S_next[0,3]   =   self.V*np.sin( State[2] + State[0]) # + normrnd(0,y_sigma); %Y
-        S_next[0,4]   =   self.V*np.cos( State[2] + State[0]) # + normrnd(0,x_sigma) X
+        S_next[0,3]   =   self.V*np.sin( State[2] + State[0]) # Y
+        S_next[0,4]   =   self.V*np.cos( State[2] + State[0]) # X
         
         
         return S_next
@@ -72,6 +73,8 @@ class env:
     def Termination(self,S_):
         # Termination condition
         idx = self.Tidx   # Time index
+        
+        # Terminate if too long simulatio or if vehicle exits road
         if idx == self.nT or S_[4]>110: 
             self.terminated=bool(1)
         
@@ -90,8 +93,7 @@ class env:
         reward,term = self.reward_function(S_)
         idx+=1  # Increase time index by 1
         
-        #if reward<=-500:
-        #    self.terminated=bool(1)
+        
         
         self.terminated = term
             
@@ -125,22 +127,7 @@ class env:
         x = S_[4]
         r = S_[1]
         
-        # lane_reward = 0
-        # if y<0 or y>7.2:
-        #     lane_reward = -1000;
         
-        
-        # # Constraint (obstacle)
-        # obs_reward=0;
-        # if x>100 and x <104 and y <=4 and y>=0:
-        #     obs_reward = -1000.;
-        
-        # # Reward for staying in lane, avoiding obstacle and 'minimizing yaw rate
-        # Reward = lane_reward - 10*pow(r,2) + obs_reward
-        # Reward = Reward+500
-        
-        # if Reward>1000:
-        #     Reward=1000
         
         Reward = -10*pow(r*10,2)
         Terminated = bool(0)
@@ -149,13 +136,16 @@ class env:
             
         if x>self.obs1[0]-self.obs1[2]/2 and x <self.obs1[0]+self.obs1[2]/2 and y >=self.obs1[1]-self.obs1[3]/2 and y<=self.obs1[1]+self.obs1[3]/2:
             Terminated  = bool(1)
-            
+        
+        # Right road edge
         if x>self.obs2[0]-self.obs2[2]/2 and x <self.obs2[0]+self.obs2[2]/2 and y >=self.obs2[1]-self.obs2[3]/2 and y<=self.obs2[1]+self.obs2[3]/2:
             Terminated = bool(1)
         
+        # Left road edge
         if x>self.obs3[0]-self.obs3[2]/2 and x <self.obs3[0]+self.obs3[2]/2 and y >=self.obs3[1]-self.obs3[3]/2 and y<=self.obs3[1]+self.obs3[3]/2:
             Terminated = bool(1)
-            
+        
+        # End of road segment (successful obstacle avoidance) 
         if x > 105:
             Terminated = bool(1)
             Reward = 1000
