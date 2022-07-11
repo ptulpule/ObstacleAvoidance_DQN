@@ -106,17 +106,13 @@ class DNNQ:
                 Q_update[idx,A[idx]] = R[idx] + Q_next[idx,A_opt[idx]]
         
         
-        #loss = self.primary_network.fit(S,Q_update,batch_size=batch_size,epochs=100,verbose=0)
         loss = self.primary_network.train_on_batch(S,Q_update)
         print(loss)
         
-        #plot_DNN(self.primary_network)
         
-        #print(loss.history['loss'][99])
-        #self.update_model()
         
         return loss
-        #return loss.history['loss'][99]
+        
         
         
         
